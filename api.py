@@ -88,7 +88,7 @@ class Direction(Resource):
         bestroute = apirequest['routes'][0]
         bestlevel = Direction.pollutionlevel(apirequest['routes'][0])
         for route in apirequest['routes'][1:]:
-            level = self.pollutionlevel(route)
+            level = Direction.pollutionlevel(route)
             if level > bestlevel:
                 bestroute = route
             elif level == bestlevel:
