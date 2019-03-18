@@ -16,4 +16,5 @@ for x in args:
 
 url += urllib.parse.urlencode(data)
 
-urllib.request.urlopen(url)
+response = urllib.request.urlopen(url)
+print(response.read().decode())

@@ -6,7 +6,7 @@ import urllib.request
 import urllib.parse
 import sqlite3
 import json
-import math
+import time
 
 app = Flask(__name__)
 api = Api(app)
@@ -15,14 +15,28 @@ directionparser = reqparse.RequestParser()
 directionparser.add_argument('src', type=str, required=True)
 directionparser.add_argument('origin', type=str, required=True)
 directionparser.add_argument('destination', type=str, required=True)
+# distance or duration if pollution is equal
 directionparser.add_argument('rank_preference', type=str, required=True)
 
-pollutionparse = reqparse.RequestParser()
-pollutionparse.add_argument('src', type=str, required=True)
-pollutionparse.add_argument('lng', type=float, required=True)
-pollutionparse.add_argument('lat', type=float, required=True)
-pollutionparse.add_argument('time')
-pollutionparse.add_argument('pollution', type=float, required=True)
+pollutionparser = reqparse.RequestParser()
+pollutionparser.add_argument('src', type=str, required=True)
+pollutionparser.add_argument('lng', type=float, required=True)
+pollutionparser.add_argument('lat', type=float, required=True)
+pollutionparser.add_argument('time')
+pollutionparser.add_argument('pollution', type=float, required=True)
+
+postlocationparser = reqparse.RequestParser()
+postlocationparser.add_argument('src', type=str, required=True)
+postlocationparser.add_argument('lat', type=float, required=True)
+postlocationparser.add_argument('lng', type=float, required=True)
+postlocationparser.add_argument('time', type=int, required=False)
+
+getlocationparser = reqparse.RequestParser()
+getlocationparser.add_argument('src', type=str, required=True)
+getlocationparser.add_argument('n', type=int, required=False)
+getlocationparser.add_argument('maxtime', type=int, required=False)
+getlocationparser.add_argument('mintime', type=int, required=False)
+getlocationparser.add_argument('later', type=bool, required=False)
 
 
 class Direction(Resource):
@@ -46,21 +60,18 @@ class Direction(Resource):
         for step in route['legs'][0]['steps']:
             for pollution_location in pollution_locations:
                 # https://wikimedia.org/api/rest_v1/media/math/render/svg/be2ab4a9d9d77f1623a2723891f652028a7a328d
-                pollution_level += abs((step['start_location']['lat'] -
-                                        step['end_location']['lat']) *
-                                       pollution_location[1] -
-                                       (step['start_location']['lng'] -
-                                        step['end_location']['lng']) *
-                                       pollution_location[0] +
-                                       step['start_location']['lng'] *
-                                       step['end_location']['lat'] -
-                                       step['start_location']['lat'] *
-                                       step['end_location']['lng']) / \
-                                       math.sqrt(
-                                           (step['start_location']['lat'] -
-                                            step['end_location']['lat']) ** 2 +
-                                           (step['start_location']['lng'] -
-                                            step['end_location']['lng']) ** 2)
+                x0 = pollution_location[1]
+                y0 = pollution_location[0]
+                x1 = step['start_location']['lng']
+                y1 = step['start_location']['lat']
+                x2 = step['end_location']['lng']
+                y2 = step['end_location']['lat']
+                m_line = (x1 - x2) / (y1 - y2)
+                c_line = y1 - m_line * x1
+                m_new = -1 / m_line
+                c_new = y0 - m_new * x0
+                lng = (c_line-c_new)/(m_line-m_new)
+                lat = lng * m_new + c_new
         return pollution_level
 
     def get(self):
@@ -72,7 +83,7 @@ class Direction(Resource):
         data['alternatives'] = "true"
         data['origin'] = args['origin']
         data['destination'] = args['destination']
-        networked = False
+        networked = True
         rank_preference = 'duration' if args['rank_preference'] != 'distance' \
                           else 'distance'
         if networked:
@@ -81,10 +92,10 @@ class Direction(Resource):
             response = urllib.request.urlopen(url)
         else:
             response = open("test.json")
-
         apirequest = json.load(response)
+
         if apirequest['status'] != 'OK':
-            return {k: apirequest[k] for k in ('status', 'error_message')}
+            return {k: apirequest[k] for k in ['status']}
         bestroute = apirequest['routes'][0]
         bestlevel = Direction.pollutionlevel(apirequest['routes'][0])
         for route in apirequest['routes'][1:]:
@@ -95,7 +106,7 @@ class Direction(Resource):
                 if route['legs'][0][rank_preference]['value'] < \
                    bestroute['legs'][0][rank_preference]['value']:
                     bestroute = route
-        return bestroute
+        return bestroute, 200, {'Access-Control-Allow-Origin': '*'}
 
 
 class Pollution(Resource):
@@ -103,7 +114,7 @@ class Pollution(Resource):
         pass
 
     def post(self):
-        args = pollutionparse.parse_args()
+        args = pollutionparser.parse_args()
         with sqlite3.connect('database/pi-breathe.db') as conn:
             c = conn.cursor()
             if 'time' in args:
@@ -126,8 +137,46 @@ class Pollution(Resource):
         return {"message": "Success"}
 
 
+class Location(Resource):
+    def get(self):
+        args = getlocationparser.parse_args()
+        args["later"] = args['later'] if 'later' in args else True
+        args["maxtime"] = args["maxtime"] if "maxtime" in args else 0
+        args["mintime"] = args["mintime"] if "mintime" in args else 0
+        args["n"] = args["n"] if "n" in args else 0
+        with sqlite3.connect("database/pi-breathe.db") as conn:
+            c = conn.cursor()
+            request = "SELECT (lng, lat, time) FROM location WHERE "
+            request += "src = :src AND "
+            if 'maxtime' in args or 'mintime' in args:
+                if 'maxtime' in args:
+                    request += "time < :maxtime "
+                if 'mintime' in args:
+                    if 'maxtime' in args:
+                        request += "AND "
+                    request += "time > :mintime "
+            request += "ORDER BY time "
+            request += "DESC" if args["later"] else "ASC"
+            if 'n' in args:
+                request += " LIMIT :n"
+            c.execute(request, args)
+            result = c.fetchall()
+        return {"locations": result}
+
+    def post(self):
+        args = postlocationparser.parse_args()
+        with sqlite3.connect("database/pi-breathe.db") as conn:
+            c = conn.cursor()
+            args["time"] = args['time'] if 'time' in args else int(time.time())
+            c.execute("INSERT INTO location (src, lng, lat, time) VALUES"
+                      " (:src, :lng, :lat, :time)", args)
+            conn.commit()
+        return {"message": "Success"}
+
+
 api.add_resource(Direction, '/direction')
 api.add_resource(Pollution, '/pollution')
+api.add_resource(Location, '/location')
 
 if __name__ == '__main__':
     app.run(debug=True)

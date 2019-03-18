@@ -1,30 +1,27 @@
 <!DOCTYPE html>
 <html>
+  <head>
+    <title>Pi-breathe Console</title>
+    <link rel="stylesheet" type="text/css" href="style.css"/>
+    <link rel="shortcut icon" type="image/png" href="leaf.png"/>
+    <meta charset="utf8"/>
+  </head>
   <body>
-    <head>
-      <title>Pi-breathe Console</title>
-      <link rel="stylesheet" type="text/css" href="style.css"/>
-      <link rel="shortcut icon" type="image/png" href="leaf.png"/>
-    </head>
     <h1>Pi-breathe Console</h1>
-    <input type="text" id="current" placeholder="Current Location E.G: Chicago, IL">
-    <br></br>
-    <input type="text" id="destination" placeholder="Destination Location E.G: Chicago, IL">
-    <br></br>
-    <div><button onclick="SubmitInfo()" class = "button button1">Submit</button></div>
+    <form id="form">
+      <input type="text" id="origin" placeholder="Current Location E.G: Chicago, IL"/>
+      <input type="text" id="destination" placeholder="Destination Location E.G: Chicago, IL"/>
+      <button type="submit" class="button">Submit</button>
+    </form>
     <p id="currentL">Current Location:</p>
     <p id="desiredL">Destination Location: </p>
-    <script>
-function SubmitInfo() {
-  var x = document.getElementById("current").value;
-  var y = document.getElementById("destination").value;
-  document.getElementById("currentL").innerHTML = "Current Location: " + x;
-  document.getElementById("desiredL").innerHTML = "Destination Location: "+ y;
-}
-    </script>
-  <div class="footer">
-    <div><a href="index.html"><button class="button button1">Back to Homepage</button></a></div>
-    <p>PiBreathe</p>
-  </div>
+    <div id="map"></div>
+    <ol id="instructions"></ol>
+    <div class="footer">
+      <div><a href="index.html"><button class="button">Back to Homepage</button></a></div>
+      <p>PiBreathe</p>
+    </div>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBpc4sD1B5EZ8NnH69T-ADeLJTiIM0YR9w&libraries=geometry"></script>
+    <script src="console.js"></script>
   </body>
 </html>
