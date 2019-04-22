@@ -58,7 +58,7 @@ def main():
                 c = conn.cursor()
                 c.execute("SELECT id, pollution, time FROM pollution LIMIT 1")
                 result = c.fetchone()
-            lng, lat, success = get_location(result['time'])
+            lng, lat, success = get_location(result[2])
             if success:
                 result['src'] = key
                 result['lng'] = lng
