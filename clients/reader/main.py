@@ -51,7 +51,7 @@ def main():
                           "pollution": pollution_level,
                           "time": timestamp,
                           })
-            c.commit()
+            conn.commit()
         success = True
         while success:
             with sqlite3.connect(DB_PATH) as conn:
