@@ -159,6 +159,7 @@ class Location(Resource):
             request += "DESC" if args["later"] else "ASC"
             if 'n' in args:
                 request += " LIMIT :n"
+            print(request)
             c.execute(request, args)
             result = c.fetchall()
         return {"locations": result}
@@ -171,7 +172,8 @@ class Location(Resource):
             c.execute("INSERT INTO location (src, lng, lat, time) VALUES"
                       " (:src, :lng, :lat, :time)", args)
             conn.commit()
-        return {"message": "Success"}
+        return {"message": "Success"}, 200, {'Access-Control-Allow-Origin': '*'
+                                             }
 
 
 api.add_resource(Direction, '/direction')
