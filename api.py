@@ -140,24 +140,18 @@ class Pollution(Resource):
 class Location(Resource):
     def get(self):
         args = getlocationparser.parse_args()
-        args["later"] = args["later"] if "later" in args else True
-        args["maxtime"] = args["maxtime"] if "maxtime" in args else 0
-        args["mintime"] = args["mintime"] if "mintime" in args else 0
-        args["n"] = args["n"] if "n" in args else 0
         with sqlite3.connect("database/pi-breathe.db") as conn:
             c = conn.cursor()
-            request = "SELECT (lng, lat, time) FROM location WHERE "
-            request += "src = :src AND "
-            if 'maxtime' in args or 'mintime' in args:
-                if 'maxtime' in args:
-                    request += "time < :maxtime "
-                if 'mintime' in args:
-                    if 'maxtime' in args:
-                        request += "AND "
-                    request += "time > :mintime "
-            request += "ORDER BY time "
+            request = "SELECT lng, lat, time FROM location WHERE "
+            request += "src = :src"
+            if args['maxtime'] is not None or args['mintime'] is not None:
+                if args['maxtime'] is not None:
+                    request += " AND time < :maxtime"
+                if args['mintime'] is not None:
+                    request += " AND time > :mintime"
+            request += " ORDER BY time "
             request += "DESC" if args["later"] else "ASC"
-            if 'n' in args:
+            if args['n'] is not None:
                 request += " LIMIT :n"
             print(request)
             c.execute(request, args)
