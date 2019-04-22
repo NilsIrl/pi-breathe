@@ -37,7 +37,8 @@ def get_location(timestamp):
 def main():
     while True:
         time.sleep(60)
-        pollution_level, timestamp = reader.get_pollution()
+        pollution_level = sum(reader.read())
+        timestamp = int(time.time())
         with sqlite3.connect("data.db") as conn:
             c = conn.cursor()
             c.execute("INSERT INTO pollution (pollution, time) VALUES"
