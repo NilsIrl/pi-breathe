@@ -1,5 +1,6 @@
-# Pi-breathe-server
-The server for the pi-breathe project.
+# pi-breathe
+
+The pi-breathe project.
 
 # TODO / alternative functionality
 * Take into account the speed to calculate the pollution source
