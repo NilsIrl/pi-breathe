@@ -140,7 +140,7 @@ class Pollution(Resource):
 class Location(Resource):
     def get(self):
         args = getlocationparser.parse_args()
-        args["later"] = args['later'] if 'later' in args else True
+        args["later"] = args["later"] if "later" in args else True
         args["maxtime"] = args["maxtime"] if "maxtime" in args else 0
         args["mintime"] = args["mintime"] if "mintime" in args else 0
         args["n"] = args["n"] if "n" in args else 0
