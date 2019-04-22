@@ -4,6 +4,7 @@ import reader
 import time
 import sqlite3
 import urllib.request
+import urllib.error
 import json
 
 DOMAIN = "localhost"
@@ -31,7 +32,7 @@ def get_location(timestamp):
                 difference = current_diff
         lng = nearest['lng']
         lat = nearest['lat']
-    except urllib.URLError:  # If there is no internet connection
+    except urllib.error.URLError:  # If there is no internet connection
         success = False
     return (lng, lat, success)
 
