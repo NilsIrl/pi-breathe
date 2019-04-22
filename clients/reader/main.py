@@ -7,6 +7,8 @@ import urllib.request
 import json
 
 DOMAIN = "localhost"
+DB_PATH = "offline.db"
+
 with open("src.key") as keyfile:
     key = keyfile.read()
 
@@ -39,8 +41,11 @@ def main():
         time.sleep(60)
         pollution_level = sum(reader.read())
         timestamp = int(time.time())
-        with sqlite3.connect("data.db") as conn:
+        with sqlite3.connect(DB_PATH) as conn:
             c = conn.cursor()
+            c.execute("CREATE TABLE IF NOT EXISTS pollution (id integer "
+                      "primary key asc autoincrement, time integer, pollution "
+                      "real NOT NULL)")
             c.execute("INSERT INTO pollution (pollution, time) VALUES"
                       "(:pollution, :time)", {
                           "pollution": pollution_level,
@@ -49,7 +54,7 @@ def main():
             c.commit()
         success = True
         while success:
-            with sqlite3.connect("data.db") as conn:
+            with sqlite3.connect(DB_PATH) as conn:
                 c = conn.cursor()
                 c.execute("SELECT id, pollution, time FROM pollution LIMIT 1")
                 result = c.fetchone()
