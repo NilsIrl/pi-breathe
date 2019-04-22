@@ -58,15 +58,26 @@ def main():
             with sqlite3.connect(DB_PATH) as conn:
                 c = conn.cursor()
                 c.execute("SELECT id, pollution, time FROM pollution LIMIT 1")
-                result = c.fetchone()
-            lng, lat, success = get_location(result[2])
+                pollution_id, pollution, pollution_time = c.fetchone()
+            lng, lat, success = get_location(pollution_time)
             if success:
+                result = {}
                 result['src'] = key
+                result['pollution'] = pollution
+                result['time'] = pollution_time
                 result['lng'] = lng
                 result['lat'] = lat
-                urllib.request.urlopen(pollution_url,
-                                       data=urllib.parse.urlencode(result)
-                                       .encode())
+                try:
+                    urllib.request.urlopen(pollution_url,
+                                           data=urllib.parse.urlencode(result)
+                                           .encode())
+                    with sqlite3.connect(DB_PATH) as conn:
+                        c = conn.cursor()
+                        c.execute("DELETE FROM pollution WHERE id=:id", {'id':
+                                  pollution_id})
+                        conn.commit()
+                except urllib.error.URLError:
+                    success = False
 
 
 if __name__ == "__main__":
