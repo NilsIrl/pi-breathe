@@ -17,7 +17,7 @@ pollution_url = "http://" + DOMAIN + "/pollution"
 
 
 def get_location(timestamp):
-    lng, lat = 0
+    lng = lat = 0
     success = True
     try:
         response = urllib.request.urlopen(location_url, timeout=2)
